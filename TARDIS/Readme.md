@@ -1,3 +1,3 @@
 # TARDIS Pulsing Light
 
-![](https://github.com/pauliusbau/electronics-farm/blob/master/TARDIS/img/tardis.jpg)
+![](http://imgur.com/MiL2VYD)
