@@ -1,0 +1,13 @@
+D:\Elektrotechnika\_Mano\uC\flip-dot_controller\app\SerialPortTerminal\SerialPortTerminal\bin\Debug\SerialPort Terminal.exe.config
+D:\Elektrotechnika\_Mano\uC\flip-dot_controller\app\SerialPortTerminal\SerialPortTerminal\bin\Debug\SerialPort Terminal.exe.manifest
+D:\Elektrotechnika\_Mano\uC\flip-dot_controller\app\SerialPortTerminal\SerialPortTerminal\bin\Debug\SerialPort Terminal.application
+D:\Elektrotechnika\_Mano\uC\flip-dot_controller\app\SerialPortTerminal\SerialPortTerminal\bin\Debug\SerialPort Terminal.exe
+D:\Elektrotechnika\_Mano\uC\flip-dot_controller\app\SerialPortTerminal\SerialPortTerminal\bin\Debug\SerialPort Terminal.pdb
+D:\Elektrotechnika\_Mano\uC\flip-dot_controller\app\SerialPortTerminal\SerialPortTerminal\obj\Debug\SerialPortTerminal.frmAbout.resources
+D:\Elektrotechnika\_Mano\uC\flip-dot_controller\app\SerialPortTerminal\SerialPortTerminal\obj\Debug\SerialPortTerminal.frmTerminal.resources
+D:\Elektrotechnika\_Mano\uC\flip-dot_controller\app\SerialPortTerminal\SerialPortTerminal\obj\Debug\SerialPortTerminal.Properties.Resources.resources
+D:\Elektrotechnika\_Mano\uC\flip-dot_controller\app\SerialPortTerminal\SerialPortTerminal\obj\Debug\SerialPort Terminal.exe.manifest
+D:\Elektrotechnika\_Mano\uC\flip-dot_controller\app\SerialPortTerminal\SerialPortTerminal\obj\Debug\SerialPort Terminal.application
+D:\Elektrotechnika\_Mano\uC\flip-dot_controller\app\SerialPortTerminal\SerialPortTerminal\obj\Debug\SerialPort Terminal.exe
+D:\Elektrotechnika\_Mano\uC\flip-dot_controller\app\SerialPortTerminal\SerialPortTerminal\obj\Debug\SerialPort Terminal.pdb
+D:\Elektrotechnika\_Mano\uC\flip-dot_controller\app\SerialPortTerminal\SerialPortTerminal\obj\Debug\SerialPortTerminal.csproj.GenerateResource.Cache

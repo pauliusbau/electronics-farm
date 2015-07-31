@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="UTF-8"?><?xml-stylesheet type='text/xsl' href='_UpgradeReport_Files/UpgradeReport.xslt'?><UpgradeLog>
+<Properties><Property Name="Solution" Value="SerialPortTerminal VS2008">
+</Property><Property Name="Solution File" Value="D:\Elektrotechnika\_Mano\uC\flip-dot_controller\app\SerialPortTerminal\SerialPortTerminal\SerialPortTerminal VS2008.sln">
+</Property><Property Name="Date" Value="2012 m. birželio 9 d.">
+</Property><Property Name="Time" Value="16:05">
+</Property></Properties><Event ErrorLevel="0" Project="" Source="SerialPortTerminal VS2008.sln" Description="File successfully backed up as D:\Elektrotechnika\_Mano\uC\flip-dot_controller\app\SerialPortTerminal\SerialPortTerminal\Backup\SerialPortTerminal VS2008.sln">
+</Event><Event ErrorLevel="0" Project="SerialPortTerminal" Source="SerialPortTerminal.csproj" Description="Project file successfully backed up as D:\Elektrotechnika\_Mano\uC\flip-dot_controller\app\SerialPortTerminal\SerialPortTerminal\Backup\SerialPortTerminal.csproj">
+</Event><Event ErrorLevel="0" Project="SerialPortTerminal" Source="SerialPortTerminal.csproj.user" Description="Project user file successfully backed up as D:\Elektrotechnika\_Mano\uC\flip-dot_controller\app\SerialPortTerminal\SerialPortTerminal\Backup\SerialPortTerminal.csproj.user">
+</Event><Event ErrorLevel="0" Project="SerialPortTerminal" Source="About.cs" Description="File successfully backed up as D:\Elektrotechnika\_Mano\uC\flip-dot_controller\app\SerialPortTerminal\SerialPortTerminal\Backup\About.cs">
+</Event><Event ErrorLevel="0" Project="SerialPortTerminal" Source="About.Designer.cs" Description="File successfully backed up as D:\Elektrotechnika\_Mano\uC\flip-dot_controller\app\SerialPortTerminal\SerialPortTerminal\Backup\About.Designer.cs">
+</Event><Event ErrorLevel="0" Project="SerialPortTerminal" Source="Terminal.cs" Description="File successfully backed up as D:\Elektrotechnika\_Mano\uC\flip-dot_controller\app\SerialPortTerminal\SerialPortTerminal\Backup\Terminal.cs">
+</Event><Event ErrorLevel="0" Project="SerialPortTerminal" Source="Terminal.Designer.cs" Description="File successfully backed up as D:\Elektrotechnika\_Mano\uC\flip-dot_controller\app\SerialPortTerminal\SerialPortTerminal\Backup\Terminal.Designer.cs">
+</Event><Event ErrorLevel="0" Project="SerialPortTerminal" Source="Program.cs" Description="File successfully backed up as D:\Elektrotechnika\_Mano\uC\flip-dot_controller\app\SerialPortTerminal\SerialPortTerminal\Backup\Program.cs">
+</Event><Event ErrorLevel="0" Project="SerialPortTerminal" Source="Properties\AssemblyInfo.cs" Description="File successfully backed up as D:\Elektrotechnika\_Mano\uC\flip-dot_controller\app\SerialPortTerminal\SerialPortTerminal\Backup\Properties\AssemblyInfo.cs">
+</Event><Event ErrorLevel="0" Project="SerialPortTerminal" Source="Properties\Resources.Designer.cs" Description="File successfully backed up as D:\Elektrotechnika\_Mano\uC\flip-dot_controller\app\SerialPortTerminal\SerialPortTerminal\Backup\Properties\Resources.Designer.cs">
+</Event><Event ErrorLevel="0" Project="SerialPortTerminal" Source="Properties\Settings.Designer.cs" Description="File successfully backed up as D:\Elektrotechnika\_Mano\uC\flip-dot_controller\app\SerialPortTerminal\SerialPortTerminal\Backup\Properties\Settings.Designer.cs">
+</Event><Event ErrorLevel="0" Project="SerialPortTerminal" Source="Properties\Settings.settings" Description="File successfully backed up as D:\Elektrotechnika\_Mano\uC\flip-dot_controller\app\SerialPortTerminal\SerialPortTerminal\Backup\Properties\Settings.settings">
+</Event><Event ErrorLevel="0" Project="SerialPortTerminal" Source="App.config" Description="File successfully backed up as D:\Elektrotechnika\_Mano\uC\flip-dot_controller\app\SerialPortTerminal\SerialPortTerminal\Backup\App.config">
+</Event><Event ErrorLevel="0" Project="SerialPortTerminal" Source="App.ico" Description="File successfully backed up as D:\Elektrotechnika\_Mano\uC\flip-dot_controller\app\SerialPortTerminal\SerialPortTerminal\Backup\App.ico">
+</Event><Event ErrorLevel="0" Project="SerialPortTerminal" Source="Notes.txt" Description="File successfully backed up as D:\Elektrotechnika\_Mano\uC\flip-dot_controller\app\SerialPortTerminal\SerialPortTerminal\Backup\Notes.txt">
+</Event><Event ErrorLevel="0" Project="SerialPortTerminal" Source="About.resx" Description="File successfully backed up as D:\Elektrotechnika\_Mano\uC\flip-dot_controller\app\SerialPortTerminal\SerialPortTerminal\Backup\About.resx">
+</Event><Event ErrorLevel="0" Project="SerialPortTerminal" Source="Terminal.resx" Description="File successfully backed up as D:\Elektrotechnika\_Mano\uC\flip-dot_controller\app\SerialPortTerminal\SerialPortTerminal\Backup\Terminal.resx">
+</Event><Event ErrorLevel="0" Project="SerialPortTerminal" Source="Properties\Resources.resx" Description="File successfully backed up as D:\Elektrotechnika\_Mano\uC\flip-dot_controller\app\SerialPortTerminal\SerialPortTerminal\Backup\Properties\Resources.resx">
+</Event><Event ErrorLevel="0" Project="SerialPortTerminal" Source="About.htm" Description="File successfully backed up as D:\Elektrotechnika\_Mano\uC\flip-dot_controller\app\SerialPortTerminal\SerialPortTerminal\Backup\About.htm">
+</Event><Event ErrorLevel="0" Project="SerialPortTerminal" Source="SerialPortTerminal.csproj" Description="The project file does not require conversion.">
+</Event><Event ErrorLevel="3" Project="SerialPortTerminal" Source="SerialPortTerminal.csproj" Description="No Conversion Required">
+</Event><Event ErrorLevel="0" Project="" Source="SerialPortTerminal VS2008.sln" Description="Solution converted successfully">
+</Event><Event ErrorLevel="3" Project="" Source="SerialPortTerminal VS2008.sln" Description="Converted">
+</Event></UpgradeLog>

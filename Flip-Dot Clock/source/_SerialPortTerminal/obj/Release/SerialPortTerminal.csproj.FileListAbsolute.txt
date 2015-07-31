@@ -1,0 +1,1 @@
+D:\Elektrotechnika\_Mano\uC\flip-dot_controller\app\SerialPortTerminal\SerialPortTerminal\bin\Release\SerialPort Terminal.exe.config
