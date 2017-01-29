@@ -244,6 +244,23 @@ static void MX_GPIO_Init(void)
 
 /* USER CODE BEGIN 4 */
 
+// ISR
+
+// nereikia, jei CubeMX yra ijungta NVIC -> EXTI Line [0:15] interrupts
+
+//void EXTI15_10_IRQHandler(void) {
+//	HAL_GPIO_EXTI_IRQHandler(USER_Btn_Pin);
+//	//HAL_GPIO_EXTI_IRQHandler(GPIO_PIN_13);
+//}
+
+void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin){
+	
+ if(GPIO_Pin == USER_Btn_Pin){
+  HAL_GPIO_TogglePin(LD2_GPIO_Port, LD2_Pin);
+ }
+
+}
+
 /* USER CODE END 4 */
 
 /**
