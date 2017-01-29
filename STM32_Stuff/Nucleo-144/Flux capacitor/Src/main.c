@@ -39,9 +39,18 @@
 /* USER CODE END Includes */
 
 /* Private variables ---------------------------------------------------------*/
+UART_HandleTypeDef huart3;
+DMA_HandleTypeDef hdma_usart3_rx;
+DMA_HandleTypeDef hdma_usart3_tx;
 
 /* USER CODE BEGIN PV */
 /* Private variables ---------------------------------------------------------*/
+#define MAXSTRING 27
+
+char	rxBuffer = '\000';
+char	rxString[MAXSTRING];
+int rxindex = 0;
+
 
 /* USER CODE END PV */
 
@@ -49,9 +58,13 @@
 void SystemClock_Config(void);
 void Error_Handler(void);
 static void MX_GPIO_Init(void);
+static void MX_DMA_Init(void);
+static void MX_USART3_UART_Init(void);
 
 /* USER CODE BEGIN PFP */
 /* Private function prototypes -----------------------------------------------*/
+void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart);
+
 
 /* USER CODE END PFP */
 
@@ -76,12 +89,19 @@ int main(void)
 
   /* Initialize all configured peripherals */
   MX_GPIO_Init();
+  MX_DMA_Init();
+  MX_USART3_UART_Init();
 
   /* USER CODE BEGIN 2 */
 
 
 	HAL_GPIO_WritePin(LD2_GPIO_Port, LD2_Pin, GPIO_PIN_SET);
-	HAL_GPIO_WritePin(LD3_GPIO_Port, LD3_Pin, GPIO_PIN_SET);
+	HAL_GPIO_WritePin(LD3_GPIO_Port, LD3_Pin, GPIO_PIN_SET);\
+	
+	char *msg = "Nucleo-144 ISR-UART-DMA Fun!\n\r";
+
+  HAL_UART_Transmit(&huart3, (uint8_t*)msg, strlen(msg), 0xFFFF);
+	HAL_UART_Receive_DMA(&huart3, &rxBuffer, 1);
 
   /* USER CODE END 2 */
 
@@ -90,16 +110,13 @@ int main(void)
   	while (1)
   {
   /* USER CODE END WHILE */
-		
+
+  /* USER CODE BEGIN 3 */
+			
 		HAL_GPIO_TogglePin(LD3_GPIO_Port, LD3_Pin);
 		HAL_Delay(250);
   
-  /* USER CODE END WHILE */
 	}
-	
-	
-  /* USER CODE BEGIN 3 */
-  
   /* USER CODE END 3 */
 
 }
@@ -155,14 +172,49 @@ void SystemClock_Config(void)
   HAL_NVIC_SetPriority(SysTick_IRQn, 0, 0);
 }
 
+/* USART3 init function */
+static void MX_USART3_UART_Init(void)
+{
+
+  huart3.Instance = USART3;
+  huart3.Init.BaudRate = 115200;
+  huart3.Init.WordLength = UART_WORDLENGTH_8B;
+  huart3.Init.StopBits = UART_STOPBITS_1;
+  huart3.Init.Parity = UART_PARITY_NONE;
+  huart3.Init.Mode = UART_MODE_TX_RX;
+  huart3.Init.HwFlowCtl = UART_HWCONTROL_NONE;
+  huart3.Init.OverSampling = UART_OVERSAMPLING_16;
+  if (HAL_UART_Init(&huart3) != HAL_OK)
+  {
+    Error_Handler();
+  }
+
+}
+
+/** 
+  * Enable DMA controller clock
+  */
+static void MX_DMA_Init(void) 
+{
+  /* DMA controller clock enable */
+  __HAL_RCC_DMA1_CLK_ENABLE();
+
+  /* DMA interrupt init */
+  /* DMA1_Stream1_IRQn interrupt configuration */
+  HAL_NVIC_SetPriority(DMA1_Stream1_IRQn, 0, 0);
+  HAL_NVIC_EnableIRQ(DMA1_Stream1_IRQn);
+  /* DMA1_Stream3_IRQn interrupt configuration */
+  HAL_NVIC_SetPriority(DMA1_Stream3_IRQn, 0, 0);
+  HAL_NVIC_EnableIRQ(DMA1_Stream3_IRQn);
+
+}
+
 /** Configure pins as 
         * Analog 
         * Input 
         * Output
         * EVENT_OUT
         * EXTI
-     PD8   ------> USART3_TX
-     PD9   ------> USART3_RX
      PA8   ------> USB_OTG_FS_SOF
      PA9   ------> USB_OTG_FS_VBUS
      PA10   ------> USB_OTG_FS_ID
@@ -201,14 +253,6 @@ static void MX_GPIO_Init(void)
   GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
   HAL_GPIO_Init(GPIOB, &GPIO_InitStruct);
 
-  /*Configure GPIO pins : STLK_RX_Pin STLK_TX_Pin */
-  GPIO_InitStruct.Pin = STLK_RX_Pin|STLK_TX_Pin;
-  GPIO_InitStruct.Mode = GPIO_MODE_AF_PP;
-  GPIO_InitStruct.Pull = GPIO_NOPULL;
-  GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_VERY_HIGH;
-  GPIO_InitStruct.Alternate = GPIO_AF7_USART3;
-  HAL_GPIO_Init(GPIOD, &GPIO_InitStruct);
-
   /*Configure GPIO pin : USB_PowerSwitchOn_Pin */
   GPIO_InitStruct.Pin = USB_PowerSwitchOn_Pin;
   GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
@@ -244,7 +288,7 @@ static void MX_GPIO_Init(void)
 
 /* USER CODE BEGIN 4 */
 
-// ISR
+// ISR -------------------------------------------------------
 
 // nereikia, jei CubeMX yra ijungta NVIC -> EXTI Line [0:15] interrupts
 
@@ -253,13 +297,67 @@ static void MX_GPIO_Init(void)
 //	//HAL_GPIO_EXTI_IRQHandler(GPIO_PIN_13);
 //}
 
+
 void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin){
 	
  if(GPIO_Pin == USER_Btn_Pin){
+	char *msg = "User Button!\n\r";
+  HAL_UART_Transmit(&huart3, (uint8_t*)msg, strlen(msg), 0xFFFF); 
+	 
   HAL_GPIO_TogglePin(LD2_GPIO_Port, LD2_Pin);
  }
 
 }
+
+//USART -------------------------------------------------
+void print(char string[MAXSTRING])
+{
+	HAL_UART_Transmit(&huart3, (uint8_t*)string, strlen(string),  0xFFFF);
+}
+
+
+void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart)
+{
+//	HAL_GPIO_TogglePin(LD2_GPIO_Port, LD2_Pin);
+
+	__HAL_UART_FLUSH_DRREGISTER(&huart3); // Clear the buffer to prevent overrun
+
+
+  HAL_UART_Transmit(&huart3, (uint8_t*)&rxBuffer, 1, 0xFFFF); //echo
+
+
+  if (rxBuffer == 8 || rxBuffer == 127) // If Backspace or del
+    {
+      print(" \b"); // "\b space \b" clears the terminal character. Remember we just echoced a \b so don't need another one here, just space and \b
+      rxindex--;
+      if (rxindex < 0) rxindex = 0;
+    }
+
+  else if (rxBuffer == '\n' || rxBuffer == '\r') // If Enter
+    {
+//      executeSerialCommand(rxString);
+      rxString[rxindex] = 0;
+      rxindex = 0;
+
+      print("\n\r");
+      print(rxString);
+
+      for (int i = 0; i < MAXSTRING; i++) rxString[i] = 0; // Clear the string buffer
+    }
+
+  else
+    {
+      rxString[rxindex] = rxBuffer; // Add that character to the string
+      rxindex++;
+      if (rxindex > MAXSTRING) // User typing too much, we can't have commands that big
+    {
+      rxindex = 0;
+      for (int i = 0; i < MAXSTRING; i++) rxString[i] = 0; // Clear the string buffer
+    }
+    }
+
+}
+
 
 /* USER CODE END 4 */
 

@@ -13,6 +13,7 @@
 "flux capacitor\stm32f4xx_hal_rcc.o"
 "flux capacitor\stm32f4xx_hal_pwr.o"
 "flux capacitor\stm32f4xx_hal_dma.o"
+"flux capacitor\stm32f4xx_hal_uart.o"
 "flux capacitor\startup_stm32f446xx.o"
 "flux capacitor\system_stm32f4xx.o"
 "flux capacitor\stm32f4xx_it.o"
