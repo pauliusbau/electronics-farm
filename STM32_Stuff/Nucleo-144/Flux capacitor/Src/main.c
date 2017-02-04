@@ -113,8 +113,8 @@ int main(void)
 
   /* USER CODE BEGIN 3 */
 			
-//		HAL_GPIO_TogglePin(LD3_GPIO_Port, LD3_Pin);
-//		HAL_Delay(250);
+		HAL_GPIO_TogglePin(LD3_GPIO_Port, LD3_Pin);
+		HAL_Delay(250);
 //		
 //		
 //		
@@ -310,10 +310,19 @@ static void MX_GPIO_Init(void)
 void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin){
 	
  if(GPIO_Pin == USER_Btn_Pin){
-	char *msg = "User Button!\n\r";
+	char *msg = "\n\rUser Button!\n\r";
   HAL_UART_Transmit(&huart3, (uint8_t*)msg, strlen(msg), 0xFFFF); 
 	 
   HAL_GPIO_TogglePin(LD2_GPIO_Port, LD2_Pin);
+	
+	char buff[30];
+	 sprintf(buff, "\r\nUSER BUTTON status: %s",
+	 HAL_GPIO_ReadPin(USER_Btn_GPIO_Port, USER_Btn_Pin) == GPIO_PIN_RESET ? "PRESSED" : "RELEASED");
+	 HAL_UART_Transmit(&huart3, (uint8_t*)buff, strlen(buff), 0xFFFF); 
+	 
+	 
+	
+	 
  }
 
 }
