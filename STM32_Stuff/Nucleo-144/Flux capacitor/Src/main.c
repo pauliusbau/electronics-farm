@@ -76,7 +76,7 @@ int main(void)
 {
 
   /* USER CODE BEGIN 1 */
-
+	char button_pressed  = 0;
   /* USER CODE END 1 */
 
   /* MCU Configuration----------------------------------------------------------*/
@@ -93,12 +93,39 @@ int main(void)
   MX_USART3_UART_Init();
 
   /* USER CODE BEGIN 2 */
+	GPIO_TypeDef *led_port[]={LD1_GPIO_Port, LD2_GPIO_Port, LD3_GPIO_Port};
+	int led_pin[]={LD1_Pin, LD2_Pin ,LD3_Pin};
 
+	char buff[30];
+	
+	for(char i=0; i<3; i++){
+		for(char j=(i+1)*2;j>0;j--){
+			
+			sprintf(buff, "\r\n  i= %i; j= %i",i,j);
+			HAL_UART_Transmit(&huart3, (uint8_t*)buff, strlen(buff), 0xFFFF); 
+			
+		switch (i){
+			case 0: {	HAL_GPIO_TogglePin(led_port[0], led_pin[0]); 
+								break;}
+			case 1: {	HAL_GPIO_TogglePin(led_port[0], led_pin[0]); 
+								HAL_GPIO_TogglePin(led_port[1], led_pin[1]); 
+								break;}
+			case 2: {	HAL_GPIO_TogglePin(led_port[0], led_pin[0]); 
+								HAL_GPIO_TogglePin(led_port[1], led_pin[1]); 
+								HAL_GPIO_TogglePin(led_port[2], led_pin[2]); 
+								break;}
+		}
+		HAL_Delay(250); 
+		}
+		HAL_Delay(250); 
+	}
+	
+		
 	HAL_GPIO_WritePin(LD1_GPIO_Port, LD1_Pin, GPIO_PIN_SET);
 	HAL_GPIO_WritePin(LD2_GPIO_Port, LD2_Pin, GPIO_PIN_SET);
 	HAL_GPIO_WritePin(LD3_GPIO_Port, LD3_Pin, GPIO_PIN_SET);
 	
-	char *msg = "Nucleo-144 ISR-UART-DMA Fun!\n\r";
+	char *msg = "\n\rNucleo-144 ISR-UART-DMA Fun!\n\r";
 
   HAL_UART_Transmit(&huart3, (uint8_t*)msg, strlen(msg), 0xFFFF);
 	HAL_UART_Receive_DMA(&huart3, &rxBuffer, 1);
@@ -123,6 +150,28 @@ int main(void)
 //			HAL_Delay(100);
 //		}
 
+		if(HAL_GPIO_ReadPin(USER_Btn_GPIO_Port, USER_Btn_Pin)){		
+			char buff[30];
+			sprintf(buff, "\r\nUSER BUTTON status: %s; button_pressed: %i",
+			HAL_GPIO_ReadPin(USER_Btn_GPIO_Port, USER_Btn_Pin) == GPIO_PIN_SET ? "PRESSED" : "RELEASED"
+			,button_pressed);
+			HAL_UART_Transmit(&huart3, (uint8_t*)buff, strlen(buff), 0xFFFF); 
+			
+			if(button_pressed==0)
+			{
+				HAL_GPIO_TogglePin(LD2_GPIO_Port, LD2_Pin);
+				button_pressed=1;
+				HAL_Delay(100);
+			}
+		
+		}
+			
+		else 
+			{
+			button_pressed=0;
+			HAL_Delay(100);
+			}
+		
 
   
 	}
@@ -306,6 +355,8 @@ static void MX_GPIO_Init(void)
 //	//HAL_GPIO_EXTI_IRQHandler(GPIO_PIN_13);
 //}
 
+/*
+
 
 void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin){
 	
@@ -321,11 +372,14 @@ void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin){
 	 HAL_UART_Transmit(&huart3, (uint8_t*)buff, strlen(buff), 0xFFFF); 
 	 
 	 
+	 sprintf(buff, "\r\nSkaicius: %.2f", 122.12);
+	 HAL_UART_Transmit(&huart3, (uint8_t*)buff, strlen(buff), 0xFFFF); 
 	
 	 
  }
 
 }
+*/
 
 //USART -------------------------------------------------
 void print(char string[MAXSTRING])
