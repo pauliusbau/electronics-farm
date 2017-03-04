@@ -39,18 +39,30 @@
 /* USER CODE END Includes */
 
 /* Private variables ---------------------------------------------------------*/
+TIM_HandleTypeDef htim4;
+TIM_HandleTypeDef htim14;
+
 UART_HandleTypeDef huart3;
 DMA_HandleTypeDef hdma_usart3_rx;
 DMA_HandleTypeDef hdma_usart3_tx;
 
 /* USER CODE BEGIN PV */
 /* Private variables ---------------------------------------------------------*/
+#define DEBUG_MODE 1
+
+
 #define MAXSTRING 27
 
 char	rxBuffer = '\000';
 char	rxString[MAXSTRING];
 int rxindex = 0;
 
+#define BURST_TIME	70
+#define READY_TIME	150
+#define TIME_OUT	300
+uint16_t ready, burst, first;
+uint16_t timer;
+volatile uint16_t breath_mode, click_count;
 
 /* USER CODE END PV */
 
@@ -60,11 +72,15 @@ void Error_Handler(void);
 static void MX_GPIO_Init(void);
 static void MX_DMA_Init(void);
 static void MX_USART3_UART_Init(void);
+static void MX_TIM14_Init(void);
+static void MX_TIM4_Init(void);                                    
+void HAL_TIM_MspPostInit(TIM_HandleTypeDef *htim);
+                                
 
 /* USER CODE BEGIN PFP */
 /* Private function prototypes -----------------------------------------------*/
 void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart);
-
+void print(char string[MAXSTRING]);
 
 /* USER CODE END PFP */
 
@@ -77,6 +93,9 @@ int main(void)
 
   /* USER CODE BEGIN 1 */
 	char button_pressed  = 0;
+	
+
+	
   /* USER CODE END 1 */
 
   /* MCU Configuration----------------------------------------------------------*/
@@ -91,57 +110,83 @@ int main(void)
   MX_GPIO_Init();
   MX_DMA_Init();
   MX_USART3_UART_Init();
+  MX_TIM14_Init();
+  MX_TIM4_Init();
 
   /* USER CODE BEGIN 2 */
+//	HAL_TIM_Base_Start_IT(&htim14);
+	HAL_TIM_PWM_Start(&htim4,TIM_CHANNEL_2);
+	
+	
 	GPIO_TypeDef *led_port[]={LD1_GPIO_Port, LD2_GPIO_Port, LD3_GPIO_Port};
 	int led_pin[]={LD1_Pin, LD2_Pin ,LD3_Pin};
 
 	char buff[30];
 	
-	for(char i=0; i<3; i++){
-		for(char j=(i+1)*2;j>0;j--){
-//			
-//			sprintf(buff, "\r\n  i= %i; j= %i",i,j);
-//			HAL_UART_Transmit(&huart3, (uint8_t*)buff, strlen(buff), 0xFFFF); 
-//			
-		switch (i){
-			case 0: {	HAL_GPIO_TogglePin(led_port[0], led_pin[0]); 
-								break;}
-			case 1: {	HAL_GPIO_TogglePin(led_port[0], led_pin[0]); 
-								HAL_GPIO_TogglePin(led_port[1], led_pin[1]); 
-								break;}
-			case 2: {	HAL_GPIO_TogglePin(led_port[0], led_pin[0]); 
-								HAL_GPIO_TogglePin(led_port[1], led_pin[1]); 
-								HAL_GPIO_TogglePin(led_port[2], led_pin[2]); 
-								break;}
-		}
-		HAL_Delay(250); 
-		}
-		HAL_Delay(250); 
-	}
-	
+//	for(char i=0; i<3; i++){
+//		for(char j=(i+1)*2;j>0;j--){
+////			
+////			sprintf(buff, "\r\n  i= %i; j= %i",i,j);
+////			HAL_UART_Transmit(&huart3, (uint8_t*)buff, strlen(buff), 0xFFFF); 
+////			
+//		switch (i){
+//			case 0: {	HAL_GPIO_TogglePin(led_port[0], led_pin[0]); 
+//								break;}
+//			case 1: {	HAL_GPIO_TogglePin(led_port[0], led_pin[0]); 
+//								HAL_GPIO_TogglePin(led_port[1], led_pin[1]); 
+//								break;}
+//			case 2: {	HAL_GPIO_TogglePin(led_port[0], led_pin[0]); 
+//								HAL_GPIO_TogglePin(led_port[1], led_pin[1]); 
+//								HAL_GPIO_TogglePin(led_port[2], led_pin[2]); 
+//								break;}
+//		}
+//		HAL_Delay(100);
+//		}
+//		HAL_Delay(100); 
+//	}
+
 		
-	HAL_GPIO_WritePin(LD1_GPIO_Port, LD1_Pin, GPIO_PIN_SET);
-	HAL_GPIO_WritePin(LD2_GPIO_Port, LD2_Pin, GPIO_PIN_SET);
-	HAL_GPIO_WritePin(LD3_GPIO_Port, LD3_Pin, GPIO_PIN_SET);
+//	HAL_GPIO_WritePin(LD1_GPIO_Port, LD1_Pin, GPIO_PIN_SET);
+//	HAL_GPIO_WritePin(LD2_GPIO_Port, LD2_Pin, GPIO_PIN_SET);
+//	HAL_GPIO_WritePin(LD3_GPIO_Port, LD3_Pin, GPIO_PIN_SET);
 	
 	char *msg = "\n\rNucleo-144 ISR-UART-DMA Fun!\n\r";
 
   HAL_UART_Transmit(&huart3, (uint8_t*)msg, strlen(msg), 0xFFFF);
 	HAL_UART_Receive_DMA(&huart3, &rxBuffer, 1);
+	
+
 
   /* USER CODE END 2 */
 
   /* Infinite loop */
   /* USER CODE BEGIN WHILE */
+	
+		uint16_t dutyCycle = HAL_TIM_ReadCapturedValue(&htim4, TIM_CHANNEL_2);
+		sprintf(buff, "\r\ndutyCycle: %d", dutyCycle);
+		HAL_UART_Transmit(&huart3, (uint8_t*)buff, strlen(buff), 0xFFFF);
+	
   	while (1)
   {
   /* USER CODE END WHILE */
 
   /* USER CODE BEGIN 3 */
-			
+	
+
 		HAL_GPIO_TogglePin(LD3_GPIO_Port, LD3_Pin);
 		HAL_Delay(250);
+		
+		if(breath_mode == 0x01){		
+				while(dutyCycle < __HAL_TIM_GET_AUTORELOAD(&htim4)) {
+					__HAL_TIM_SET_COMPARE(&htim4, TIM_CHANNEL_2, ++dutyCycle);					
+					HAL_Delay(1);
+				}
+
+				while(dutyCycle > 0) {
+					__HAL_TIM_SET_COMPARE(&htim4, TIM_CHANNEL_2, --dutyCycle);
+					HAL_Delay(1);
+				}
+		}
 //		
 //		
 //		
@@ -231,6 +276,59 @@ void SystemClock_Config(void)
   HAL_NVIC_SetPriority(SysTick_IRQn, 0, 0);
 }
 
+/* TIM4 init function */
+static void MX_TIM4_Init(void)
+{
+
+  TIM_MasterConfigTypeDef sMasterConfig;
+  TIM_OC_InitTypeDef sConfigOC;
+
+  htim4.Instance = TIM4;
+  htim4.Init.Prescaler = 159;
+  htim4.Init.CounterMode = TIM_COUNTERMODE_UP;
+  htim4.Init.Period = 999;
+  htim4.Init.ClockDivision = TIM_CLOCKDIVISION_DIV1;
+  if (HAL_TIM_PWM_Init(&htim4) != HAL_OK)
+  {
+    Error_Handler();
+  }
+
+  sMasterConfig.MasterOutputTrigger = TIM_TRGO_RESET;
+  sMasterConfig.MasterSlaveMode = TIM_MASTERSLAVEMODE_DISABLE;
+  if (HAL_TIMEx_MasterConfigSynchronization(&htim4, &sMasterConfig) != HAL_OK)
+  {
+    Error_Handler();
+  }
+
+  sConfigOC.OCMode = TIM_OCMODE_PWM1;
+  sConfigOC.Pulse = 0;
+  sConfigOC.OCPolarity = TIM_OCPOLARITY_HIGH;
+  sConfigOC.OCFastMode = TIM_OCFAST_DISABLE;
+  if (HAL_TIM_PWM_ConfigChannel(&htim4, &sConfigOC, TIM_CHANNEL_2) != HAL_OK)
+  {
+    Error_Handler();
+  }
+
+  HAL_TIM_MspPostInit(&htim4);
+
+}
+
+/* TIM14 init function */
+static void MX_TIM14_Init(void)
+{
+
+  htim14.Instance = TIM14;
+  htim14.Init.Prescaler = 0;
+  htim14.Init.CounterMode = TIM_COUNTERMODE_UP;
+  htim14.Init.Period = 15999;
+  htim14.Init.ClockDivision = TIM_CLOCKDIVISION_DIV1;
+  if (HAL_TIM_Base_Init(&htim14) != HAL_OK)
+  {
+    Error_Handler();
+  }
+
+}
+
 /* USART3 init function */
 static void MX_USART3_UART_Init(void)
 {
@@ -294,7 +392,7 @@ static void MX_GPIO_Init(void)
   __HAL_RCC_GPIOA_CLK_ENABLE();
 
   /*Configure GPIO pin Output Level */
-  HAL_GPIO_WritePin(GPIOB, LD1_Pin|LD3_Pin|LD2_Pin, GPIO_PIN_RESET);
+  HAL_GPIO_WritePin(GPIOB, LD1_Pin|LD3_Pin, GPIO_PIN_RESET);
 
   /*Configure GPIO pin Output Level */
   HAL_GPIO_WritePin(USB_PowerSwitchOn_GPIO_Port, USB_PowerSwitchOn_Pin, GPIO_PIN_RESET);
@@ -305,8 +403,8 @@ static void MX_GPIO_Init(void)
   GPIO_InitStruct.Pull = GPIO_NOPULL;
   HAL_GPIO_Init(USER_Btn_GPIO_Port, &GPIO_InitStruct);
 
-  /*Configure GPIO pins : LD1_Pin LD3_Pin LD2_Pin */
-  GPIO_InitStruct.Pin = LD1_Pin|LD3_Pin|LD2_Pin;
+  /*Configure GPIO pins : LD1_Pin LD3_Pin */
+  GPIO_InitStruct.Pin = LD1_Pin|LD3_Pin;
   GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
   GPIO_InitStruct.Pull = GPIO_NOPULL;
   GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
@@ -360,12 +458,75 @@ static void MX_GPIO_Init(void)
 
 
 void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin){
+
 	
- if(GPIO_Pin == USER_Btn_Pin){
-	char *msg = "\n\rUser Button!\n\r";
-  HAL_UART_Transmit(&huart3, (uint8_t*)msg, strlen(msg), 0xFFFF); 
-	 
-  HAL_GPIO_TogglePin(LD2_GPIO_Port, LD2_Pin);
+	if(GPIO_Pin == USER_Btn_Pin){
+		char *msg = "\n\r --- User Button! ---\n\r";
+		HAL_UART_Transmit(&huart3, (uint8_t*)msg, strlen(msg), 0xFFFF); 
+	
+		if (!first)
+				{
+					HAL_TIM_Base_Start_IT(&htim14);		
+					first = 1;
+					
+					#ifdef DEBUG_MODE
+					print("First Pulse\n\r");
+					#endif
+				} else
+				
+		if (burst)
+			{
+				timer = 0;
+				first = 0;
+				burst = 0;
+
+				HAL_TIM_Base_Stop_IT(&htim14);
+
+				#ifdef DEBUG_MODE
+				print("False Pulse\n\r");
+				#endif
+			} else {
+
+				if (ready)
+					{
+						HAL_TIM_Base_Stop_IT(&htim14);
+						timer = 0;
+						first = 0;
+						ready = 0;
+
+						HAL_GPIO_TogglePin(LD1_GPIO_Port, LD1_Pin);
+						
+						breath_mode = breath_mode ^ 0x01;
+//						if (breath_mode != 0x01) {
+							click_count = 0;
+//						}
+//						
+						#ifdef DEBUG_MODE
+						print("ON/OFF \n\r");
+						#endif
+					}				
+			}
+			
+						if (breath_mode != 0x01 && !burst && !ready){
+				click_count++;
+							
+				char buff[30];
+				sprintf(buff, "\r\n breath_mode: %d   click_count: %d \r\n", breath_mode, click_count);
+				HAL_UART_Transmit(&huart3, (uint8_t*)buff, strlen(buff), 0xFFFF); 
+				
+				switch (click_count){
+					case 1: __HAL_TIM_SET_COMPARE(&htim4, TIM_CHANNEL_2, 249); break;
+					case 2: __HAL_TIM_SET_COMPARE(&htim4, TIM_CHANNEL_2, 499); break;
+					case 3: __HAL_TIM_SET_COMPARE(&htim4, TIM_CHANNEL_2, 749); break;
+					case 4: __HAL_TIM_SET_COMPARE(&htim4, TIM_CHANNEL_2, 999); break;
+					case 5: __HAL_TIM_SET_COMPARE(&htim4, TIM_CHANNEL_2, 0); click_count = 0; break;				
+				}
+				
+			}
+						
+			
+			
+//  HAL_GPIO_TogglePin(LD2_GPIO_Port, LD2_Pin);
 	
 //	char buff[30];
 	 
@@ -378,8 +539,44 @@ void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin){
 //	 HAL_UART_Transmit(&huart3, (uint8_t*)buff, strlen(buff), 0xFFFF); 
 	
 	 
- }
+		}
+}
 
+
+void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim) {
+	// This callback is automatically called by the HAL on the UEV event
+	if(htim->Instance == TIM14){
+//		HAL_GPIO_TogglePin(LD1_GPIO_Port, LD1_Pin);
+		
+		timer++;
+		if (timer == BURST_TIME)
+			{
+				#ifdef DEBUG_MODE
+				print("Burst\n\r");
+				#endif
+				burst = 1;
+				ready = 0;
+			} else
+		if (timer == READY_TIME)
+			{
+				burst = 0;
+				ready = 1;
+				#ifdef DEBUG_MODE
+				print("Ready\n\r");
+				#endif
+			} else
+		if (timer == TIME_OUT)
+			{
+				#ifdef DEBUG_MODE
+				print("Time out\n\r");
+				#endif
+				timer = 0;
+				burst = 0;
+				ready = 0;
+				first = 0;
+				HAL_TIM_Base_Stop_IT(&htim14);
+			}
+	}
 }
 
 

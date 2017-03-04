@@ -22,28 +22,30 @@ Dialog DLL:      TCM.DLL V1.21.0.0
  
 <h2>Project:</h2>
 C:\Users\pauliusbau\Documents\SourceTree\electronics-farm\STM32_Stuff\Nucleo-144\Flux capacitor\MDK-ARM\Flux capacitor.uvprojx
-Project File Date:  02/04/2017
+Project File Date:  03/03/2017
 
 <h2>Output:</h2>
 *** Using Compiler 'V5.06 update 4 (build 422)', folder: 'C:\Keil_v5\ARM\ARMCC\Bin'
 Build target 'Flux capacitor'
 compiling main.c...
-../Src/main.c(130): warning:  #223-D: function "strlen" declared implicitly
+../Src/main.c(155): warning:  #223-D: function "strlen" declared implicitly
     HAL_UART_Transmit(&huart3, (uint8_t*)msg, strlen(msg), 0xFFFF);
-../Src/main.c(131): warning:  #167-D: argument of type "char *" is incompatible with parameter of type "uint8_t *"
+../Src/main.c(156): warning:  #167-D: argument of type "char *" is incompatible with parameter of type "uint8_t *"
         HAL_UART_Receive_DMA(&huart3, &rxBuffer, 1);
-../Src/main.c(79): warning:  #177-D: variable "button_pressed"  was declared but never referenced
+../Src/main.c(95): warning:  #177-D: variable "button_pressed"  was declared but never referenced
         char button_pressed  = 0;
-../Src/main.c(99): warning:  #177-D: variable "buff"  was declared but never referenced
-        char buff[30];
-../Src/main.c(366): warning:  #223-D: function "strlen" declared implicitly
-    HAL_UART_Transmit(&huart3, (uint8_t*)msg, strlen(msg), 0xFFFF); 
-../Src/main.c(389): warning:  #223-D: function "strlen" declared implicitly
+../Src/main.c(121): warning:  #177-D: variable "led_port"  was declared but never referenced
+        GPIO_TypeDef *led_port[]={LD1_GPIO_Port, LD2_GPIO_Port, LD3_GPIO_Port};
+../Src/main.c(122): warning:  #177-D: variable "led_pin"  was declared but never referenced
+        int led_pin[]={LD1_Pin, LD2_Pin ,LD3_Pin};
+../Src/main.c(465): warning:  #223-D: function "strlen" declared implicitly
+                HAL_UART_Transmit(&huart3, (uint8_t*)msg, strlen(msg), 0xFFFF); 
+../Src/main.c(586): warning:  #223-D: function "strlen" declared implicitly
         HAL_UART_Transmit(&huart3, (uint8_t*)string, strlen(string),  0xFFFF);
-../Src/main.c: 6 warnings, 0 errors
+../Src/main.c: 7 warnings, 0 errors
 linking...
-Program Size: Code=6860 RO-data=532 RW-data=16 ZI-data=1312  
-"Flux capacitor\Flux capacitor.axf" - 0 Error(s), 6 Warning(s).
+Program Size: Code=9508 RO-data=508 RW-data=28 ZI-data=1428  
+"Flux capacitor\Flux capacitor.axf" - 0 Error(s), 7 Warning(s).
 
 <h2>Software Packages used:</h2>
 
@@ -61,7 +63,7 @@ Package Vendor: ARM
 <h2>Collection of Component Files used:</h2>
 
    * Component: ARM::CMSIS:CORE:5.0.0
-Build Time Elapsed:  00:00:13
+Build Time Elapsed:  00:00:23
 </pre>
 </body>
 </html>
