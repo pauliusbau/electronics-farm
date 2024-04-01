@@ -1,0 +1,408 @@
+# Staircase lamp controller
+esphome:
+  name: staircase-lamp
+  platform: ESP8266
+  board: nodemcuv2
+  on_boot:
+  - priority: -100.0 
+    then:
+      - switch.turn_off: relay
+      - select.set:
+          id: work_mode
+          option: "Always OFF"
+
+
+wifi:
+  ssid: !secret WiFi_SSID
+  password: !secret WiFi_PWD
+  fast_connect: true
+  manual_ip:
+    static_ip: 0.0.0.0
+    gateway: 0.0.0.1
+    subnet: 255.255.255.0
+
+logger:
+  level: DEBUG
+  baud_rate: 0
+
+ota:
+  password: !secret OTA_PWD
+
+api:
+
+status_led:
+  pin:
+    number: D4
+    inverted: True
+
+globals:
+  - id: lamp_motion_activated
+    type: bool
+    restore_value: no
+    initial_value: 'false'
+  - id: lamp_permanently_on
+    type: bool
+    restore_value: no
+    initial_value: 'false'
+  - id: lamp_cover_off
+    type: bool
+    restore_value: no
+    initial_value: 'false'
+  - id: use_light_sensor    
+    type: bool
+    restore_value: no
+    initial_value: 'true'
+  - id: use_door_sensor    
+    type: bool
+    restore_value: no
+    initial_value: 'true'
+sensor:
+  - platform: wifi_signal
+    name: "[Staircase Lamp] WiFi signal"
+    update_interval: 60s 
+  - platform: uptime
+    name: "[Staircase Lamp] Uptime"
+    update_interval: 60s    
+
+
+script:
+  # Fail-safe script for turning lamp and oll the modes off
+  - id: lamp_failsafe_script
+    then:
+      - delay: 900s # 15 min
+      - select.set:
+          id: work_mode
+          option: "Always OFF"
+  # Script to automaticly turn off relay after a certain delay       
+  - id: lamp_turnoff_script
+    then:
+      - logger.log:
+          format: "!! lamp_turnoff_script start !!"
+          level: WARN
+      - if:
+          condition:
+            lambda: 'return id(lamp_permanently_on) != true;'
+          then:
+            - delay: 10s
+            - logger.log:
+                format: "Turning OFF RELAY"
+                level: WARN
+            - switch.turn_off: relay
+
+binary_sensor:
+# Controll button:
+  - platform: gpio
+    name: "[Staircase Lamp] User Button"
+    id: button
+    pin:
+      number: D5
+      mode: INPUT_PULLUP
+      inverted: True
+    filters:
+    - delayed_on: 100ms
+    - delayed_off: 150ms
+    - delayed_on_off: 100ms
+    on_click: 
+      # -------- Lamp Motion activated mode ----------
+      - min_length: 50ms
+        max_length: 350ms
+        then:
+          - logger.log:
+                format: "Button press detected!"
+                level: WARN 
+          - if:
+              condition:
+                lambda: 'return id(lamp_motion_activated) == false;'
+              then:
+                # -- turn on Relay briefly when activating Motion mode --
+                - switch.turn_on: relay 
+                - script.stop: lamp_turnoff_script 
+                - script.execute: lamp_turnoff_script
+                # -- -- -- -- -- -- -- -- -- -- -- -- --
+                - select.set:
+                    id: work_mode
+                    option: "Motion"
+              else:
+                - select.set:
+                    id: work_mode
+                    option: "Always OFF"
+      # --------- Lamp Always ON Mode --------
+      - min_length: 1000ms
+        max_length: 5000ms
+        then:
+            - logger.log:
+                format: "LONG button press detected!"
+                level: WARN
+            - if:
+                condition:
+                  lambda: 'return id(lamp_permanently_on) == false;'
+                then: 
+                  - select.set:
+                      id: work_mode
+                      option: "Always ON"
+                else:
+                  - select.set:
+                      id: work_mode
+                      option: "Always OFF"
+  
+  # Doppler radar input config (ON - mottion is detected)
+  - platform: gpio
+    name: "[Staircase Lamp] Doppler radar status"
+    id: doppler_status
+    device_class: motion
+    pin:
+      number: D2
+    on_press:
+      then:
+      - logger.log:
+            format: "Motion detected!"
+            level: WARN
+      - if:
+          condition:
+            lambda: 'return id(lamp_motion_activated) == true;'
+          then:
+             - if: 
+                condition:
+                  lambda: 'return id(lamp_cover_off) == true;'
+                then:
+                  - switch.turn_on: relay
+                else:
+                  - if: 
+                      condition:
+                        lambda: 'return id(use_light_sensor) == true;'
+                      then:
+                        if: 
+                          condition:
+                            binary_sensor.is_off: light_sensor
+                          then:
+                            - switch.turn_on: relay
+                      else:
+                        - switch.turn_on: relay
+      - switch.turn_on: doppler_status_led
+    on_release:
+      then:
+        - logger.log:
+            format: "Motion is not detected anymore!"
+            level: WARN
+        - switch.turn_off: doppler_status_led
+        - if: 
+            condition:
+              lambda: 'return id(lamp_motion_activated) == true;'
+            then:
+              - script.stop: lamp_turnoff_script # In case of motion retrigger, stop the automatic lamp turn off script
+              - script.execute: lamp_turnoff_script # Execute script to automaticly turn off the lamp after certain time
+
+  # Reed switch for detecting that lamp cover is off
+  - platform: gpio
+    name: "[Staircase Lamp] Cover status"
+    id: reed_lamp
+    device_class: tamper
+    publish_initial_state: True
+    pin:
+      number: D6
+      mode: INPUT_PULLUP
+      inverted: false # <-- Off means that the cover is off
+    on_release:
+      then:
+          - logger.log:
+              format: "[Staircase Lamp] Cover is off!"
+              level: WARN 
+          - select.set:
+              id: work_mode
+              option: "ALARM"
+
+  # Reed switch for detecting that the door is open
+  - platform: gpio
+    name: "[Staircase Lamp] Door status"
+    id: reed_door
+    device_class: door
+    pin:
+      number: D7
+      mode: INPUT_PULLUP
+      inverted: false # <-- ON means that the door is open
+    filters:
+      - delayed_on: 100ms
+      - delayed_off: 150ms
+      - delayed_on_off: 100ms
+    on_press:
+      then:
+        - logger.log:
+            format: "Front Door wes opened!"
+            level: ERROR 
+        - if: 
+            condition:
+              lambda: 'return id(use_door_sensor) == true;'
+            then:
+              if: 
+                condition:
+                  binary_sensor.is_off: light_sensor # <-- OFF means that it's dark enough
+                then:
+                  - switch.turn_on: relay
+                  - script.stop: lamp_turnoff_script 
+                  - script.stop: lamp_failsafe_script
+                  - script.execute: lamp_failsafe_script
+    on_release:
+      then:
+        - logger.log:
+            format: "Front Door was closed!"
+            level: ERROR 
+        - script.stop: lamp_turnoff_script
+        - script.stop: lamp_failsafe_script
+        - script.execute: lamp_turnoff_script 
+
+  # Light detector
+  - platform: gpio
+    name: "[Staircase Lamp] Light sensor"
+    id: light_sensor
+    device_class: light
+    pin:
+      number: D0
+      inverted: True # <-- OFF means that it's dark enough
+    filters:
+      - delayed_on: 10s
+
+switch:
+# RELAY for controlling lamp power:
+  - platform: gpio
+    name: "[Staircase Lamp] Relay Switch"
+    id: relay
+    device_class: switch
+    restore_mode: ALWAYS_OFF
+    pin: 
+      number: D1
+      inverted: False
+
+# LED for indicating movement detection:
+  - platform: gpio
+    name: "[Staircase Lamp] Dopper Radar status LED"
+    id: doppler_status_led
+    restore_mode: ALWAYS_OFF
+    pin: 
+      number: D8
+      inverted: False
+      
+
+# Button LED:
+light:
+  - platform: binary
+    name: "[Staircase Lamp] Button LED"
+    id: button_led
+    output: button_led_output
+    restore_mode: ALWAYS_OFF
+    effects:
+      - strobe:
+          name: blink
+          colors:
+            - state: true
+              duration: 500ms
+            - state: false
+              duration: 500ms
+      - strobe:
+          name: blink_fast
+          colors:
+            - state: true
+              duration: 200ms
+            - state: false
+              duration: 200ms
+
+output:
+  - id: button_led_output
+    platform: gpio
+    pin: 
+      number: D3
+      inverted: True
+
+
+
+# ------------ LAMP Work Mode selector ------
+select:
+  - platform: template
+    name: "[Staircase Lamp] Work mode"
+    id: work_mode
+    options:
+     - "Motion"
+     - "Always ON"
+     - "Always OFF"
+     - "ALARM"
+    set_action:
+      then:
+        - logger.log:
+            format: "Chosen Work Mode: %s"
+            args: ["x.c_str()"]
+            level: ERROR 
+        - lambda: |-
+            id(work_mode).publish_state(x);
+            id(work_mode).state = x.c_str();
+        - if:
+            condition:
+              - lambda: |- 
+                  return id(work_mode).state == "Motion" ;
+            then:                                
+                - light.turn_on:
+                    id: button_led
+                    effect: none
+                - globals.set:
+                    id: lamp_motion_activated
+                    value: 'true'
+                - globals.set:
+                    id: lamp_permanently_on
+                    value: 'false'
+                - script.stop: lamp_failsafe_script
+        - if:
+            condition:
+              - lambda: |- 
+                  return id(work_mode).state == "Always ON" ;
+            then:
+                - globals.set:
+                    id: lamp_permanently_on
+                    value: 'true'
+                - globals.set:
+                    id: lamp_motion_activated
+                    value: 'false'
+                - light.turn_on:
+                        id: button_led
+                        effect: blink
+                - switch.turn_on: relay
+                - script.stop: lamp_turnoff_script
+                - script.stop: lamp_failsafe_script
+                - script.execute: lamp_failsafe_script
+        - if:
+            condition:
+              - lambda: |- 
+                  return id(work_mode).state == "Always OFF" ;
+            then:
+                - logger.log:
+                    format: "Turning everything off!"
+                    level: WARN 
+                - light.turn_off:
+                    id: button_led
+                - switch.turn_off: relay
+                - globals.set:
+                    id: lamp_motion_activated
+                    value: 'false'
+                - globals.set:
+                    id: lamp_permanently_on
+                    value: 'false'
+                - script.stop: lamp_turnoff_script
+                - script.stop: lamp_failsafe_script
+        - if:
+            condition:
+              - lambda: |- 
+                  return id(work_mode).state == "ALARM" ;
+            then:
+                - switch.turn_on: relay
+                - globals.set:
+                    id: lamp_cover_off
+                    value: 'true'
+                - globals.set:
+                    id: lamp_motion_activated
+                    value: 'true'
+                - globals.set:
+                    id: lamp_permanently_on
+                    value: 'false'
+                - script.stop: lamp_failsafe_script
+                - script.execute: lamp_failsafe_script
+                - delay: 1s # light doesn't come on after boot whitout this delay 
+                - light.turn_on:
+                    id: button_led
+                    effect: blink_fast
