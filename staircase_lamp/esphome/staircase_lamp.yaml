@@ -1,15 +1,35 @@
 # Staircase lamp controller
 esphome:
   name: staircase-lamp
-  platform: ESP8266
-  board: nodemcuv2
   on_boot:
-  - priority: -100.0 
+  - priority: 600
     then:
       - switch.turn_off: relay
       - select.set:
           id: work_mode
           option: "Always OFF"
+  # Boot guard: ignore cover sensor glitches while the inputs settle,
+  # then check once whether the cover is really off
+  - priority: -100
+    then:
+      - delay: 5s
+      - globals.set:
+          id: boot_settled
+          value: 'true'
+      - if:
+          condition:
+            lambda: 'return id(reed_lamp).has_state() && id(reed_lamp).state;'
+          then:
+            - logger.log:
+                format: "[Staircase Lamp] Cover is off after boot!"
+                level: WARN
+            - select.set:
+                id: work_mode
+                option: "ALARM"
+
+esp8266:
+  board: nodemcuv2
+
 
 
 wifi:
@@ -26,9 +46,14 @@ logger:
   baud_rate: 0
 
 ota:
-  password: !secret OTA_PWD
+  - platform: esphome
+    password: !secret OTA_PWD
+
 
 api:
+  reboot_timeout: 0s
+
+debug:
 
 status_led:
   pin:
@@ -52,17 +77,41 @@ globals:
     type: bool
     restore_value: no
     initial_value: 'true'
-  - id: use_door_sensor    
+  - id: use_door_sensor
     type: bool
     restore_value: no
     initial_value: 'true'
+  - id: boot_settled
+    type: bool
+    restore_value: no
+    initial_value: 'false'
 sensor:
   - platform: wifi_signal
     name: "[Staircase Lamp] WiFi signal"
     update_interval: 60s 
   - platform: uptime
     name: "[Staircase Lamp] Uptime"
-    update_interval: 60s    
+    update_interval: 60s
+
+# Sensors for ESP version and WIFI information
+text_sensor:
+  # ESPHome version
+  - platform: version
+    hide_timestamp: true
+    name: "[Staircase Lamp] ESPHome Version"
+  # IP address and connected SSID
+  - platform: wifi_info
+    ip_address:
+      name: "[Staircase Lamp] IP Address"
+      icon: mdi:wifi
+    ssid:
+      name: "[Staircase Lamp] Connected SSID"
+      icon: mdi:wifi-strength-2
+  # Reason of the last reset (power-on, watchdog, software reset, ...)
+  - platform: debug
+    reset_reason:
+      name: "[Staircase Lamp] Reset reason"
+
 
 
 script:
@@ -101,8 +150,7 @@ binary_sensor:
     filters:
     - delayed_on: 100ms
     - delayed_off: 150ms
-    - delayed_on_off: 100ms
-    on_click: 
+    on_click:
       # -------- Lamp Motion activated mode ----------
       - min_length: 50ms
         max_length: 350ms
@@ -197,19 +245,25 @@ binary_sensor:
     name: "[Staircase Lamp] Cover status"
     id: reed_lamp
     device_class: tamper
-    publish_initial_state: True
+    trigger_on_initial_state: false # <-- boot-time state is checked by on_boot
     pin:
       number: D6
       mode: INPUT_PULLUP
-      inverted: false # <-- Off means that the cover is off
-    on_release:
+      inverted: false # <-- ON (tamper detected, pin HIGH) means that the cover is off
+    filters:
+      - delayed_on: 1s
+    on_press:
       then:
-          - logger.log:
-              format: "[Staircase Lamp] Cover is off!"
-              level: WARN 
-          - select.set:
-              id: work_mode
-              option: "ALARM"
+        - if:
+            condition:
+              lambda: 'return id(boot_settled);' # <-- boot-time state is checked by on_boot
+            then:
+              - logger.log:
+                  format: "[Staircase Lamp] Cover is off!"
+                  level: WARN
+              - select.set:
+                  id: work_mode
+                  option: "ALARM"
 
   # Reed switch for detecting that the door is open
   - platform: gpio
@@ -223,7 +277,6 @@ binary_sensor:
     filters:
       - delayed_on: 100ms
       - delayed_off: 150ms
-      - delayed_on_off: 100ms
     on_press:
       then:
         - logger.log:
@@ -332,11 +385,10 @@ select:
             level: ERROR 
         - lambda: |-
             id(work_mode).publish_state(x);
-            id(work_mode).state = x.c_str();
         - if:
             condition:
-              - lambda: |- 
-                  return id(work_mode).state == "Motion" ;
+              - lambda: |-
+                  return x == "Motion" ;
             then:                                
                 - light.turn_on:
                     id: button_led
@@ -347,17 +399,23 @@ select:
                 - globals.set:
                     id: lamp_permanently_on
                     value: 'false'
+                - globals.set:
+                    id: lamp_cover_off
+                    value: 'false'
                 - script.stop: lamp_failsafe_script
         - if:
             condition:
               - lambda: |- 
-                  return id(work_mode).state == "Always ON" ;
+                  return x == "Always ON" ;
             then:
                 - globals.set:
                     id: lamp_permanently_on
                     value: 'true'
                 - globals.set:
                     id: lamp_motion_activated
+                    value: 'false'
+                - globals.set:
+                    id: lamp_cover_off
                     value: 'false'
                 - light.turn_on:
                         id: button_led
@@ -369,7 +427,7 @@ select:
         - if:
             condition:
               - lambda: |- 
-                  return id(work_mode).state == "Always OFF" ;
+                  return x == "Always OFF" ;
             then:
                 - logger.log:
                     format: "Turning everything off!"
@@ -383,12 +441,15 @@ select:
                 - globals.set:
                     id: lamp_permanently_on
                     value: 'false'
+                - globals.set:
+                    id: lamp_cover_off
+                    value: 'false'
                 - script.stop: lamp_turnoff_script
                 - script.stop: lamp_failsafe_script
         - if:
             condition:
               - lambda: |- 
-                  return id(work_mode).state == "ALARM" ;
+                  return x == "ALARM" ;
             then:
                 - switch.turn_on: relay
                 - globals.set:
